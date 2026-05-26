@@ -30,7 +30,7 @@ theme_set(theme_minimal(base_size = 12))
 
 ## 3 Visualizing Penguin Bill Measurements with ggplot2
 
-This draft investigates whether bill length and bill depth help distinguish the three Pygoscelis penguin species. The main check is whether looking at all penguins together hides patterns that become clear once species is included.
+This report investigates whether bill length and bill depth help distinguish the three Pygoscelis penguin species, using the Palmer penguins data described by Gorman et al. (2014) and Horst, Hill, and Gorman (2022). The main check is whether looking at all penguins together hides patterns that become clear once species is included.
 
 ### 3.1 Data Preparation
 
@@ -199,7 +199,7 @@ ggplot(penguins_bill, aes(x = bill_len)) +
   )
 ```
 
-The 1 mm bins show local detail, but they also make the shape look noisier. The 5 mm bins make the plot cleaner but hide some of the separation between the shorter and longer bill groups. I would use the 2 mm version in a report because it keeps the main structure visible without over-emphasising small bin-to-bin changes.
+The 1 mm bins show local detail, but they also make the shape look noisier. The 5 mm bins make the plot cleaner but hide some of the separation between the shorter and longer bill groups. The 2 mm version is the best choice for the report because it keeps the main structure visible without over-emphasising small bin-to-bin changes.
 
 #### c. Histogram Interpretation
 
@@ -252,7 +252,7 @@ The jitter plot makes the relative densities much easier to see than the raw poi
 #| fig-cap: "Data source: Gorman et al. (2014)."
 
 ggplot(penguins_bill, aes(x = bill_len, y = species)) +
-  geom_beeswarm(alpha = 0.65, cex = 1.4) +
+  geom_beeswarm(alpha = 0.65, cex = 1.4, priority = "ascending") +
   labs(
     title = "Beeswarm bill-length points by species",
     x = "Bill length (mm)",
@@ -260,15 +260,15 @@ ggplot(penguins_bill, aes(x = bill_len, y = species)) +
   )
 ```
 
-The beeswarm plot keeps each point closer to its actual value while still reducing overlap. Compared with jitter, it gives a more structured view of density, but the point positions are more visually arranged and may take slightly longer to read.
+The beeswarm plot uses an algorithmic offset rather than random jitter: it moves points just enough perpendicular to the measurement axis to reduce overlap while preserving bill length on the x-axis. Because the packing is computed from point size, figure size, device resolution, and the order in which observations are placed, the exact stack shape can differ when the graph is redrawn with another output size or different plotting settings. That difference does not mean the data changed; the correct interpretation is the horizontal bill-length position and the wider or narrower clusters within each species, not the exact vertical position of any dot.
 
 #### g. Pros and Cons - Jitter versus Beeswarm
 
 The jitter plot is useful because it is simple and easy to explain. Since we set the horizontal jitter to zero, the bill-length values on the x-axis stay correct, while the vertical jitter spreads out points that would otherwise sit directly on top of one another. This makes it easier to notice that Adelie penguins are concentrated at shorter bill lengths, while Chinstrap and Gentoo penguins are concentrated at longer bill lengths.
 
-The main disadvantage of jitter is that the vertical movement is artificial. The exact y-position of a point is not a real measurement; it is only a display adjustment. If the jitter height is too small, many points still overlap, but if it is too large, points from neighbouring species rows can start to look mixed together. Because the jitter positions are partly random, the plot can also look slightly different unless a seed is set.
+The main disadvantage of jitter is that the vertical movement is artificial. The exact y-position of a point is not a real measurement; it is only a display adjustment. If the jitter height is too small, many points still overlap, but if it is too large, points from neighbouring species rows can start to look mixed together. The `set.seed()` call makes the jitter reproducible in this report, but the positions would change if the seed or jitter settings changed.
 
-The beeswarm plot has the advantage of using a more systematic offset. Instead of scattering points randomly, it packs nearby observations so that dense bill-length ranges become visible as wider clusters of dots. For these penguin data, this helps us compare the density within each species row while still keeping each point close to its true bill-length value. The beeswarm version makes the overlap around common bill lengths easier to see than the raw point plot and usually more orderly than the jitter plot.
+The beeswarm plot has the advantage of using a more systematic offset. Instead of scattering points randomly, it packs nearby observations so that dense bill-length ranges become visible as wider clusters of dots. For these penguin data, this helps us compare the density within each species row while still keeping each point close to its true bill-length value. The exact packing may vary across output sizes because the algorithm recalculates how much room each dot needs, but the bill-length values and species groups remain unchanged.
 
 The disadvantage of the beeswarm plot is that it is less familiar and can look visually busier. The sideways packing should not be interpreted as another variable, but a reader who has not seen beeswarm plots before may need a moment to understand it. It also depends on the `ggbeeswarm` package, whereas jitter is available directly in `ggplot2`. For this dataset, we would use the beeswarm plot when we want to emphasise individual observations and local density, but the jitter plot is still a good simpler option for a general audience.
 
@@ -411,8 +411,8 @@ The faceted bill-depth plot shows that Gentoo penguins have noticeably shallower
 
 species_bill_summary <- penguins_bill |>
   summarize(
-    mean_bill_len = mean(bill_len),
-    mean_bill_dep = mean(bill_dep),
+    mean_bill_len = round(mean(bill_len), 2),
+    mean_bill_dep = round(mean(bill_dep), 2),
     n = n(),
     .by = species
   ) |>
@@ -510,7 +510,11 @@ ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
 ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
   geom_smooth(method = "lm", color = "black") +
   geom_count(alpha = 0.75, color = "steelblue4") +
-  scale_size_area(max_size = 8, name = "Penguins at\nsame point") +
+  scale_size_area(
+    max_size = 8,
+    breaks = c(1, 2),
+    name = "Penguins at\nsame point"
+  ) +
   labs(
     title = "Count-symbol pooled scatter plot",
     x = "Bill length (mm)",
@@ -520,7 +524,7 @@ ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
 
 #### e. Assessment of Scatter Plot Variants
 
-I would submit the count-symbol scatter plot from part d.ii for a journal referee. It preserves the measured coordinates and shows exact stacks with symbol size, while the jittered plot moves the observations slightly. The count-symbol plot does not solve every visual-overlap problem, but it is more honest about the recorded values than jitter for this measurement data.
+The count-symbol scatter plot from part d.ii is the strongest choice for a journal-style figure. It preserves the measured coordinates and shows exact duplicate coordinates with symbol size, while the jittered plot moves the observations slightly. The count-symbol plot does not solve every visual-overlap problem, but it is more faithful to the recorded measurement values than jitter for this dataset.
 
 #### f. Grouped Scatter Plot
 
@@ -533,7 +537,11 @@ I would submit the count-symbol scatter plot from part d.ii for a journal refere
 ggplot(penguins_bill, aes(x = bill_len, y = bill_dep, color = species)) +
   geom_count(alpha = 0.75) +
   geom_smooth(method = "lm", se = FALSE) +
-  scale_size_area(max_size = 7, name = "Penguins at\nsame point") +
+  scale_size_area(
+    max_size = 7,
+    breaks = c(1, 2),
+    name = "Penguins at\nsame point"
+  ) +
   labs(
     title = "Species-specific relationship between bill length and bill depth",
     x = "Bill length (mm)",
@@ -542,7 +550,7 @@ ggplot(penguins_bill, aes(x = bill_len, y = bill_dep, color = species)) +
   )
 ```
 
-Mapping species to colour makes the hidden grouping visible. The pooled line gives a negative relationship, but within each species the fitted line is positive. The statistical term for this apparent reversal between the pooled and grouped trends is Simpson's paradox.
+Mapping species to colour makes the hidden grouping visible. The pooled scatter plots all show the same general negative trend: when species is ignored, points with longer bills tend to sit lower on the bill-depth axis, so the overall fitted line slopes downward. The grouped scatter plot shows the opposite pattern inside the species groups: within Adelie, Chinstrap, and Gentoo, the fitted lines slope upward, meaning longer bills within the same species tend to go with deeper bills. These trends oppose each other because the pooled plot mixes two different effects: differences between species averages and relationships within each species. Gentoo penguins are generally longer-billed but shallower-billed than Adelie penguins, so combining the species pulls the overall line downward even though the within-species lines slope upward. The statistical term for this apparent reversal between the pooled and grouped trends is Simpson's paradox.
 
 **Verifier cross-check.** The correlation signs should match the slopes seen in the scatter plots.
 
@@ -551,12 +559,12 @@ Mapping species to colour makes the hidden grouping visible. The pooled line giv
 
 pooled_correlation <- tibble(
   group = "All species pooled",
-  correlation = cor(penguins_bill$bill_len, penguins_bill$bill_dep)
+  correlation = round(cor(penguins_bill$bill_len, penguins_bill$bill_dep), 3)
 )
 
 species_correlations <- penguins_bill |>
   summarize(
-    correlation = cor(bill_len, bill_dep),
+    correlation = round(cor(bill_len, bill_dep), 3),
     .by = species
   ) |>
   rename(group = species)
@@ -568,30 +576,29 @@ The verifier output matches the visual pattern: the pooled correlation is negati
 
 ### 3.5 Summarize the Insights Gained
 
-Bill length and bill depth can help distinguish the three Pygoscelis species, but each measurement separates the species in a different way. The bill-length plots show Adelie penguins tending to have shorter bills, while Chinstrap and Gentoo penguins overlap more in length. The bill-depth plots show Gentoo penguins tending to have shallower bills, while Adelie and Chinstrap overlap more in depth. Looking only at the pooled scatter plot is misleading because it suggests a negative relationship between bill length and bill depth. Once species is shown, the species-specific regression lines are positive, so the pooled view is an example of Simpson's paradox. These observations are consistent with Horst, Hill, and Gorman (2022), who use the Palmer penguins data to show how species grouping changes the interpretation of bill measurements.
+Bill length and bill depth can help distinguish the three Pygoscelis species, but each measurement separates the species in a different way. The bill-length plots show Adelie penguins tending to have shorter bills, while Chinstrap and Gentoo penguins overlap more in length. The bill-depth plots show Gentoo penguins tending to have shallower bills, while Adelie and Chinstrap overlap more in depth. Simpson's paradox appears in the scatter plots because the trend for the combined data points in the opposite direction from the trends inside the species groups. In the pooled scatter plot, longer bills appear to be associated with shallower bills, giving a negative overall relationship. After species is added, each species-specific regression line slopes upward, meaning that within Adelie, Chinstrap, and Gentoo groups, penguins with longer bills also tend to have deeper bills. The pooled negative trend is therefore misleading because it mixes species with different average bill shapes, and these observations are consistent with Horst, Hill, and Gorman (2022), who use the Palmer penguins data to show how species grouping changes the interpretation of bill measurements.
 
 **Verifier cross-check.** The summary above is consistent with the numeric checks: the species means support the histogram interpretations, and the correlation table supports the Simpson's paradox interpretation.
 
 ### 3.6 Consolidate the Results
 
-The verifier checks are included directly after the relevant tasks, using row-count checks, range checks, species summaries, duplicate-coordinate checks, and correlation checks. All required plots in this draft are produced with `ggplot`, include axis labels with units, and include the caption "Data source: Gorman et al. (2014)." The only package outside the core tidyverse and `ggbeeswarm` is `palmerpenguins`, which is loaded only because it provides the `penguins` dataset in this environment.
+The verifier checks are included directly after the relevant tasks, using row-count checks, range checks, species summaries, duplicate-coordinate checks, and correlation checks. All required plots in this report are produced with `ggplot`, include axis labels with units, and include the caption "Data source: Gorman et al. (2014)." The only package outside the core tidyverse and `ggbeeswarm` is `palmerpenguins`, which is loaded only because it provides the `penguins` dataset in this environment.
 
 ## 4 Completing Your Submission
 
 ### 4.1 Reflect on AI Use
 
-The team used Codex as the chat-based AI tool for this draft. A useful AI suggestion was to create a checklist from the lab handout so that each required plot and verifier cross-check had a matching QMD section. One AI response was incomplete because it initially treated `penguins` as if it would always be available without an extra package; the team corrected this by loading `palmerpenguins` and adding the required explanation because it is outside the listed core tidyverse packages. The team reviewed the generated code against the rendered output and kept only the parts that matched the assignment rules.
+The team used OpenCode as the chat-based AI tool for this report. A useful AI suggestion was to compute scalar values, such as the overall mean bill length and bill depth, as named objects before passing them to `geom_vline()`. This made the code easier to check and allowed the same values to be reused in the written explanation. One AI response was misleading because it initially placed `mean(bill_len)` inside `aes(xintercept = ...)` in a faceted plot, which rendered without an error but produced a different mean line in each species panel. The team caught this by comparing the plotted lines with an independent summary table, then corrected the code by computing the overall mean outside `ggplot()` and passing it as a fixed `xintercept`. The team reviewed the generated code against the rendered output and kept only the parts that matched the assignment rules.
 
 ### 4.2 List Each Member's Role and Contributions
 
 | Role | Member | Contributions |
 |---|---|---|
-| Coder | Role Member | Created the canonical QMD, wrote the R chunks, checked chunk labels, and rendered the HTML draft. |
-| Navigator + Verifier | Role Member | Checked the task list, reviewed row counts, species summaries, duplicate-point checks, and correlation checks. |
-| Constructive Critic + Reporter | Role Member | Reviewed explanations for clarity, checked that the plot choices were justified, and prepared team-facing summary text. |
-| AI Liaison | Role Member | Managed the AI interaction log, identified useful and incomplete AI output, and checked that AI use followed the lab rules. |
+| Coder | Joshua | Created the canonical QMD, wrote the R chunks, checked chunk labels, and rendered the HTML draft. |
+| Navigator + Verifier | Benjamin | Checked the task list, reviewed row counts, species summaries, duplicate-point checks, and correlation checks. |
+| Constructive Critic + Reporter | Dannon | Reviewed explanations for clarity, checked that the plot choices were justified, and prepared team-facing summary text. |
+| AI Liaison | MeiYuen | Managed the AI interaction log, identified useful and incomplete AI output, and checked that AI use followed the lab rules. |
 
-No late arrivals or role changes were recorded in this draft.
 
 ## References
 
