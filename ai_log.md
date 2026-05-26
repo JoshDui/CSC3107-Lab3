@@ -163,3 +163,17 @@ Response:
 ```text
 Noted. I’ll finish the QMD/HTML verification first, then initialize the project repo, commit the work, and push it to `https://github.com/JoshDui/CSC3107-Lab3` as the initial push.
 ```
+
+## Interaction 7 - Human to Codex
+
+Prompt:
+
+```text
+ok, refering to the project, can you please elaborate a bit more on the advantages and disadvantages (pros and cons) segment for the Jitter vs Beeswarm? i think we can elaborate more than 1 paragraph here.
+```
+
+Response:
+
+```text
+I’ll update that section directly in the QMD, then re-render the HTML and refresh the ZIP so the submitted artifacts stay consistent.
+```

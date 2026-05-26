@@ -264,7 +264,13 @@ The beeswarm plot keeps each point closer to its actual value while still reduci
 
 #### g. Pros and Cons - Jitter versus Beeswarm
 
-One advantage of the beeswarm plot is that it offsets points systematically, so dense bill-length ranges become visible without using random-looking vertical movement. One disadvantage is that the layout can look more complicated than a jitter plot, especially to readers who have not seen beeswarm plots before. For this dataset, beeswarm is useful because the y-axis has only three species categories and overplotting is a real issue.
+The jitter plot is useful because it is simple and easy to explain. Since we set the horizontal jitter to zero, the bill-length values on the x-axis stay correct, while the vertical jitter spreads out points that would otherwise sit directly on top of one another. This makes it easier to notice that Adelie penguins are concentrated at shorter bill lengths, while Chinstrap and Gentoo penguins are concentrated at longer bill lengths. Jitter is also built into `ggplot2`, so it does not require the reader or the team to understand an extra plotting package.
+
+The main disadvantage of jitter is that the vertical movement is artificial. The exact y-position of a point is not a real measurement; it is only a display adjustment. If the jitter height is too small, many points still overlap, but if it is too large, points from neighbouring species rows can start to look mixed together. Because the jitter positions are partly random, the plot can also look slightly different unless a seed is set.
+
+The beeswarm plot has the advantage of using a more systematic offset. Instead of scattering points randomly, it packs nearby observations so that dense bill-length ranges become visible as wider clusters of dots. For these penguin data, this helps us compare the density within each species row while still keeping each point close to its true bill-length value. The beeswarm version makes the overlap around common bill lengths easier to see than the raw point plot and usually more orderly than the jitter plot.
+
+The disadvantage of the beeswarm plot is that it is less familiar and can look visually busier. The sideways packing should not be interpreted as another variable, but a reader who has not seen beeswarm plots before may need a moment to understand it. It also depends on the `ggbeeswarm` package, whereas jitter is available directly in `ggplot2`. For this dataset, we would use the beeswarm plot when we want to emphasise individual observations and local density, but the jitter plot is still a good simpler option for a general audience.
 
 #### h. Faceted Bill-Length Histogram
 
