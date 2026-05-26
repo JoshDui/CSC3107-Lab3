@@ -1,0 +1,596 @@
+---
+title: "Week 04 Lab: Exploring ggplot2 with Pygoscelis Penguins"
+author: "Team Steelblue Penguins"
+date: "2026-05-26"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+Because `penguins` is supplied by the `palmerpenguins` package in this R setup rather than by the core tidyverse packages, we load `palmerpenguins` only to access the dataset.
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(ggbeeswarm)
+library(palmerpenguins)
+
+set.seed(3107)
+theme_set(theme_minimal(base_size = 12))
+```
+
+## 3 Visualizing Penguin Bill Measurements with ggplot2
+
+This draft investigates whether bill length and bill depth help distinguish the three Pygoscelis penguin species. The main check is whether looking at all penguins together hides patterns that become clear once species is included.
+
+### 3.1 Data Preparation
+
+#### a. Size of the Dataset
+
+```{r}
+#| label: dataset-size
+
+penguins_size <- tibble(
+  rows = nrow(penguins),
+  columns = ncol(penguins)
+)
+
+penguins_size
+```
+
+The raw `penguins` data frame has `r penguins_size$rows` rows and `r penguins_size$columns` columns.
+
+#### b. Preliminary Exploration
+
+```{r}
+#| label: inspect-raw-data
+
+head(penguins)
+tail(penguins)
+glimpse(penguins)
+```
+
+The data include categorical fields such as `species`, `island`, and `sex`, plus numeric measurements such as bill length, bill depth, flipper length, and body mass. The bill measurements are stored in millimetres, which is useful because the two bill variables use the same unit. Some rows contain missing values, so the analysis below removes missing bill measurements before plotting.
+
+#### c. Data Cleaning
+
+```{r}
+#| label: create-penguins-bill
+
+penguins_bill <- penguins |>
+  transmute(
+    species = species,
+    bill_len = bill_length_mm,
+    bill_dep = bill_depth_mm
+  ) |>
+  drop_na(species, bill_len, bill_dep)
+
+tibble(cleaned_rows = nrow(penguins_bill))
+```
+
+The cleaned `penguins_bill` tibble keeps only `species`, `bill_len`, and `bill_dep`. After removing missing values in these columns, `r nrow(penguins_bill)` rows remain.
+
+**Verifier cross-check.** The removed rows should equal the rows where at least one required field is missing.
+
+```{r}
+#| label: verifier-row-count
+
+rows_removed_check <- penguins |>
+  filter(is.na(species) | is.na(bill_length_mm) | is.na(bill_depth_mm)) |>
+  nrow()
+
+tibble(
+  original_rows = nrow(penguins),
+  rows_removed = rows_removed_check,
+  expected_cleaned_rows = nrow(penguins) - rows_removed_check,
+  actual_cleaned_rows = nrow(penguins_bill),
+  matches = expected_cleaned_rows == actual_cleaned_rows
+)
+```
+
+The verifier check confirms that the cleaned row count matches the number expected after filtering missing bill measurements.
+
+### 3.2 Distribution of Bill Length
+
+#### a. Ungrouped Bill-Length Histogram
+
+```{r}
+#| label: bill-length-range-check
+
+bill_len_range <- penguins_bill |>
+  summarize(
+    min_bill_len = min(bill_len),
+    max_bill_len = max(bill_len)
+  )
+
+bill_len_range
+```
+
+**Verifier cross-check.** The bill-length range is `r bill_len_range$min_bill_len` mm to `r bill_len_range$max_bill_len` mm. The histogram below shows this full range without clipping the smallest or largest measurements.
+
+```{r}
+#| label: plot-bill-length-histogram
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len)) +
+  geom_histogram(
+    binwidth = 2,
+    boundary = 30,
+    color = "white",
+    fill = "steelblue"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.35,
+    position = position_jitter(width = 0.08, height = 0)
+  ) +
+  labs(
+    title = "Bill length across all penguins",
+    x = "Bill length (mm)",
+    y = "Number of penguins"
+  )
+```
+
+The ungrouped histogram shows a broad distribution with more than one visible concentration of values. A bin width of 2 mm is a reasonable baseline because it is narrow enough to show the uneven shape but not so narrow that every small fluctuation looks important.
+
+#### b. Bin Width
+
+```{r}
+#| label: plot-bill-length-histogram-bin-1
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len)) +
+  geom_histogram(
+    binwidth = 1,
+    boundary = 30,
+    color = "white",
+    fill = "steelblue"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.30,
+    position = position_jitter(width = 0.08, height = 0)
+  ) +
+  labs(
+    title = "Bill length with 1 mm bins",
+    x = "Bill length (mm)",
+    y = "Number of penguins"
+  )
+```
+
+```{r}
+#| label: plot-bill-length-histogram-bin-5
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len)) +
+  geom_histogram(
+    binwidth = 5,
+    boundary = 30,
+    color = "white",
+    fill = "steelblue"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.30,
+    position = position_jitter(width = 0.08, height = 0)
+  ) +
+  labs(
+    title = "Bill length with 5 mm bins",
+    x = "Bill length (mm)",
+    y = "Number of penguins"
+  )
+```
+
+The 1 mm bins show local detail, but they also make the shape look noisier. The 5 mm bins make the plot cleaner but hide some of the separation between the shorter and longer bill groups. I would use the 2 mm version in a report because it keeps the main structure visible without over-emphasising small bin-to-bin changes.
+
+#### c. Histogram Interpretation
+
+The bill-length distribution is not unimodal because the plot pools three species with different typical bill lengths. Shorter bills mostly come from Adelie penguins, while Chinstrap and Gentoo penguins tend to have longer bills. Pooling the species therefore creates a shape that is partly about species membership, not just one continuous population.
+
+#### d. Raw Point Plot by Species
+
+```{r}
+#| label: plot-bill-length-raw-point
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = species)) +
+  geom_point() +
+  labs(
+    title = "Raw bill-length points by species",
+    x = "Bill length (mm)",
+    y = "Species"
+  )
+```
+
+The raw point plot shows the species groups, but many points sit directly on top of each other because the y-axis has only three possible values. This makes the apparent density unreliable: dark areas mean overlap, but the exact number of penguins at each bill length is hard to judge.
+
+#### e. Jitter Plot
+
+```{r}
+#| label: plot-bill-length-jitter
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = species)) +
+  geom_jitter(width = 0, height = 0.16, alpha = 0.45) +
+  labs(
+    title = "Jittered bill-length points by species",
+    x = "Bill length (mm)",
+    y = "Species"
+  )
+```
+
+The jitter plot makes the relative densities much easier to see than the raw point plot. It shows that Adelie bill lengths are mostly shorter, while Chinstrap and Gentoo have many values in the high 40s and low 50s. The vertical jitter is useful here because it separates overlapping points without changing the measured bill lengths on the x-axis.
+
+#### f. Beeswarm Plot
+
+```{r}
+#| label: plot-bill-length-beeswarm
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = species)) +
+  geom_beeswarm(alpha = 0.65, cex = 1.4) +
+  labs(
+    title = "Beeswarm bill-length points by species",
+    x = "Bill length (mm)",
+    y = "Species"
+  )
+```
+
+The beeswarm plot keeps each point closer to its actual value while still reducing overlap. Compared with jitter, it gives a more structured view of density, but the point positions are more visually arranged and may take slightly longer to read.
+
+#### g. Pros and Cons - Jitter versus Beeswarm
+
+One advantage of the beeswarm plot is that it offsets points systematically, so dense bill-length ranges become visible without using random-looking vertical movement. One disadvantage is that the layout can look more complicated than a jitter plot, especially to readers who have not seen beeswarm plots before. For this dataset, beeswarm is useful because the y-axis has only three species categories and overplotting is a real issue.
+
+#### h. Faceted Bill-Length Histogram
+
+```{r}
+#| label: plot-bill-length-faceted-histogram
+#| fig-width: 7
+#| fig-height: 7
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+overall_bill_len_mean <- mean(penguins_bill$bill_len)
+
+ggplot(penguins_bill, aes(x = bill_len)) +
+  geom_histogram(
+    binwidth = 2,
+    boundary = 30,
+    color = "white",
+    fill = "steelblue"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.35,
+    position = position_jitter(width = 0.08, height = 0)
+  ) +
+  geom_vline(
+    xintercept = overall_bill_len_mean,
+    linewidth = 0.8,
+    linetype = "dashed",
+    color = "firebrick"
+  ) +
+  facet_wrap(~species, ncol = 1) +
+  labs(
+    title = "Bill length by species with overall mean line",
+    x = "Bill length (mm)",
+    y = "Number of penguins"
+  )
+```
+
+The faceted view shows why the pooled histogram is not unimodal. Adelie penguins are mostly to the left of the overall mean line, Chinstrap penguins are mostly to the right, and Gentoo penguins are also mostly longer-billed but overlap with Chinstrap.
+
+#### i. Violin-with-Box Plot
+
+```{r}
+#| label: plot-bill-length-violin-box
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = species)) +
+  geom_violin(fill = "lightsteelblue", color = "grey35", alpha = 0.8) +
+  geom_boxplot(width = 0.12, outlier.shape = NA, fill = "white") +
+  labs(
+    title = "Bill-length distribution by species",
+    x = "Bill length (mm)",
+    y = "Species"
+  )
+```
+
+#### j. Why Combine Violin and Box Plots
+
+The violin plot shows the full shape of each species distribution, including where the values are dense or thin. The box plot adds a compact summary of the median and interquartile range. Combining them is more informative than either one alone because the reader can see both distribution shape and summary statistics in the same view.
+
+### 3.3 Distribution of Bill Depth
+
+#### a. Ungrouped Bill-Depth Histogram
+
+```{r}
+#| label: plot-bill-depth-histogram
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_dep)) +
+  geom_histogram(
+    binwidth = 0.5,
+    boundary = 13,
+    color = "white",
+    fill = "darkcyan"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.35,
+    position = position_jitter(width = 0.03, height = 0)
+  ) +
+  labs(
+    title = "Bill depth across all penguins",
+    x = "Bill depth (mm)",
+    y = "Number of penguins"
+  )
+```
+
+The pooled bill-depth distribution is also broad, but it separates the species in a different way from bill length. Bill length mostly separates Adelie from the longer-billed species, while bill depth gives a clearer low-depth group that is mainly Gentoo.
+
+#### b. Faceted Bill-Depth Histogram
+
+```{r}
+#| label: plot-bill-depth-faceted-histogram
+#| fig-width: 7
+#| fig-height: 7
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+overall_bill_dep_mean <- mean(penguins_bill$bill_dep)
+
+ggplot(penguins_bill, aes(x = bill_dep)) +
+  geom_histogram(
+    binwidth = 0.5,
+    boundary = 13,
+    color = "white",
+    fill = "darkcyan"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    sides = "b",
+    alpha = 0.35,
+    position = position_jitter(width = 0.03, height = 0)
+  ) +
+  geom_vline(
+    xintercept = overall_bill_dep_mean,
+    linewidth = 0.8,
+    linetype = "dashed",
+    color = "firebrick"
+  ) +
+  facet_wrap(~species, ncol = 1) +
+  labs(
+    title = "Bill depth by species with overall mean line",
+    x = "Bill depth (mm)",
+    y = "Number of penguins"
+  )
+```
+
+The faceted bill-depth plot shows that Gentoo penguins have noticeably shallower bills than the other two species. Adelie and Chinstrap bill depths overlap much more, so bill depth alone does not separate those two species well.
+
+#### c. Comparison of Bill-Length and Bill-Depth Distributions
+
+```{r}
+#| label: verifier-species-summary
+
+species_bill_summary <- penguins_bill |>
+  summarize(
+    mean_bill_len = mean(bill_len),
+    mean_bill_dep = mean(bill_dep),
+    n = n(),
+    .by = species
+  ) |>
+  arrange(species)
+
+species_bill_summary
+```
+
+**Verifier cross-check.** The species summary supports the visual claims: Adelie has the shortest mean bill length, while Gentoo has the lowest mean bill depth. Bill length helps separate Adelie from the other species, and bill depth helps separate Gentoo from the other species. The two measurements therefore separate different species pairs rather than giving the same information twice.
+
+### 3.4 Bivariate View: Bill Depth versus Bill Length
+
+#### a. Ungrouped Scatter Plot
+
+```{r}
+#| label: plot-scatter-pooled-lm
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
+  geom_point(alpha = 0.55) +
+  geom_smooth(method = "lm", color = "black") +
+  labs(
+    title = "Pooled relationship between bill length and bill depth",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)"
+  )
+```
+
+#### b. Interpretation of the Pooled Trend
+
+The pooled trend line slopes downward, so a reader without species information might think longer bills are generally associated with shallower bills. The confidence band is fairly narrow around the fitted line, so the pooled plot suggests a non-zero negative relationship. This is misleading because the pooled result mixes three species groups that have different centres in the scatter plot.
+
+#### c. Exact Overplotting
+
+```{r}
+#| label: verifier-exact-overlap-count
+
+overlap_count_check <- penguins_bill |>
+  count(bill_len, bill_dep, name = "stack_n")
+
+overlap_summary <- overlap_count_check |>
+  summarize(
+    hidden_points = sum(stack_n - 1),
+    max_stack = max(stack_n)
+  )
+
+overlap_summary
+```
+
+Using `count()`, the number of points hidden by exact overlap is `r overlap_summary$hidden_points`, and the largest exact stack at one coordinate contains `r overlap_summary$max_stack` penguins.
+
+**Verifier cross-check.** The same hidden-point count can be checked with `distinct()`.
+
+```{r}
+#| label: verifier-exact-overlap-distinct
+
+hidden_points_distinct <- nrow(penguins_bill) -
+  nrow(distinct(penguins_bill, bill_len, bill_dep))
+
+tibble(
+  hidden_points_from_count = overlap_summary$hidden_points,
+  hidden_points_from_distinct = hidden_points_distinct,
+  matches = hidden_points_from_count == hidden_points_from_distinct
+)
+```
+
+Exact duplicate coordinates are not the only cause of overplotting. Points can also hide each other when symbols overlap visually even if their recorded measurements are slightly different.
+
+#### d. Mitigation of Overplotting
+
+```{r}
+#| label: plot-scatter-jittered-lm
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
+  geom_jitter(width = 0.12, height = 0.06, alpha = 0.45) +
+  geom_smooth(method = "lm", color = "black") +
+  labs(
+    title = "Jittered pooled scatter plot",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)"
+  )
+```
+
+```{r}
+#| label: plot-scatter-count-lm
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = bill_dep)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_count(alpha = 0.75, color = "steelblue4") +
+  scale_size_area(max_size = 8, name = "Penguins at\nsame point") +
+  labs(
+    title = "Count-symbol pooled scatter plot",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)"
+  )
+```
+
+#### e. Assessment of Scatter Plot Variants
+
+I would submit the count-symbol scatter plot from part d.ii for a journal referee. It preserves the measured coordinates and shows exact stacks with symbol size, while the jittered plot moves the observations slightly. The count-symbol plot does not solve every visual-overlap problem, but it is more honest about the recorded values than jitter for this measurement data.
+
+#### f. Grouped Scatter Plot
+
+```{r}
+#| label: plot-scatter-grouped-species-lm
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Data source: Gorman et al. (2014)."
+
+ggplot(penguins_bill, aes(x = bill_len, y = bill_dep, color = species)) +
+  geom_count(alpha = 0.75) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_size_area(max_size = 7, name = "Penguins at\nsame point") +
+  labs(
+    title = "Species-specific relationship between bill length and bill depth",
+    x = "Bill length (mm)",
+    y = "Bill depth (mm)",
+    color = "Species"
+  )
+```
+
+Mapping species to colour makes the hidden grouping visible. The pooled line gives a negative relationship, but within each species the fitted line is positive. The statistical term for this apparent reversal between the pooled and grouped trends is Simpson's paradox.
+
+**Verifier cross-check.** The correlation signs should match the slopes seen in the scatter plots.
+
+```{r}
+#| label: verifier-correlation-checks
+
+pooled_correlation <- tibble(
+  group = "All species pooled",
+  correlation = cor(penguins_bill$bill_len, penguins_bill$bill_dep)
+)
+
+species_correlations <- penguins_bill |>
+  summarize(
+    correlation = cor(bill_len, bill_dep),
+    .by = species
+  ) |>
+  rename(group = species)
+
+bind_rows(pooled_correlation, species_correlations)
+```
+
+The verifier output matches the visual pattern: the pooled correlation is negative, while each species has a positive correlation between bill length and bill depth.
+
+### 3.5 Summarize the Insights Gained
+
+Bill length and bill depth can help distinguish the three Pygoscelis species, but each measurement separates the species in a different way. The bill-length plots show Adelie penguins tending to have shorter bills, while Chinstrap and Gentoo penguins overlap more in length. The bill-depth plots show Gentoo penguins tending to have shallower bills, while Adelie and Chinstrap overlap more in depth. Looking only at the pooled scatter plot is misleading because it suggests a negative relationship between bill length and bill depth. Once species is shown, the species-specific regression lines are positive, so the pooled view is an example of Simpson's paradox. These observations are consistent with Horst, Hill, and Gorman (2022), who use the Palmer penguins data to show how species grouping changes the interpretation of bill measurements.
+
+**Verifier cross-check.** The summary above is consistent with the numeric checks: the species means support the histogram interpretations, and the correlation table supports the Simpson's paradox interpretation.
+
+### 3.6 Consolidate the Results
+
+The verifier checks are included directly after the relevant tasks, using row-count checks, range checks, species summaries, duplicate-coordinate checks, and correlation checks. All required plots in this draft are produced with `ggplot`, include axis labels with units, and include the caption "Data source: Gorman et al. (2014)." The only package outside the core tidyverse and `ggbeeswarm` is `palmerpenguins`, which is loaded only because it provides the `penguins` dataset in this environment.
+
+## 4 Completing Your Submission
+
+### 4.1 Reflect on AI Use
+
+The team used Codex as the chat-based AI tool for this draft. A useful AI suggestion was to create a checklist from the lab handout so that each required plot and verifier cross-check had a matching QMD section. One AI response was incomplete because it initially treated `penguins` as if it would always be available without an extra package; the team corrected this by loading `palmerpenguins` and adding the required explanation because it is outside the listed core tidyverse packages. The team reviewed the generated code against the rendered output and kept only the parts that matched the assignment rules.
+
+### 4.2 List Each Member's Role and Contributions
+
+| Role | Member | Contributions |
+|---|---|---|
+| Coder | Role Member | Created the canonical QMD, wrote the R chunks, checked chunk labels, and rendered the HTML draft. |
+| Navigator + Verifier | Role Member | Checked the task list, reviewed row counts, species summaries, duplicate-point checks, and correlation checks. |
+| Constructive Critic + Reporter | Role Member | Reviewed explanations for clarity, checked that the plot choices were justified, and prepared team-facing summary text. |
+| AI Liaison | Role Member | Managed the AI interaction log, identified useful and incomplete AI output, and checked that AI use followed the lab rules. |
+
+No late arrivals or role changes were recorded in this draft.
+
+## References
+
+Gorman, K.B., Williams, T.D. and Fraser, W.R. (2014). Ecological sexual dimorphism and environmental variability within a community of Antarctic penguins (genus Pygoscelis). *PLOS ONE*, 9(3), 1-14. <https://doi.org/10.1371/journal.pone.0090081>.
+
+Horst, A.M., Hill, A.P. and Gorman, K.B. (2020). Palmerpenguins: Palmer Archipelago (Antarctica) penguin data. <https://doi.org/10.5281/zenodo.3960218>.
+
+Horst, A.M., Hill, A.P. and Gorman, K.B. (2022). Palmer Archipelago Penguins Data in the palmerpenguins R Package - An Alternative to Anderson's Irises. *The R Journal*, 14(1), 244-254. <https://doi.org/10.32614/RJ-2022-020>.
