@@ -5,7 +5,7 @@
 ```
 
 Response:
-I’ve put together this solution for you. It directly fulfills your requirement to check for empty fields using filter() and nrow(), while also building a verification step to prove the math is correct.
+I've put together this solution for you. It directly fulfills your requirement to check for empty fields using filter() and nrow(), while also building a verification step to prove the math is correct.
 ```r
 rows_removed_check <- penguins |>
   filter(is.na(species) | is.na(bill_length_mm) | is.na(bill_depth_mm)) |>
@@ -56,7 +56,7 @@ Provide me a solution to compute the range of `bill_len` (minimum and maximum) a
 ```
 
 Response:
-I’ve put together this solution for you. It efficiently computes the range using the summarize() function alongside min() and max().
+I've put together this solution for you. It efficiently computes the range using the summarize() function alongside min() and max().
 
 ```r
 species_bill_summary <- penguins_bill |>
@@ -99,7 +99,7 @@ Together, these two values give you the exact range of the dataset in a clean, t
 Use summarize() with the .by argument to create a small summary table with the mean bill_len and bill_dep for each species.
 ```
 Response:
-I’ve put together this solution for you. It uses the modern .by argument inside summarize() to group the data efficiently, and finishes with arrange() for a clean, readable layout.
+I've put together this solution for you. It uses the modern .by argument inside summarize() to group the data efficiently, and finishes with arrange() for a clean, readable layout.
 
 Here is a quick breakdown of why I structured the solution this way:
 
@@ -126,7 +126,7 @@ Here is a quick breakdown of why I structured the solution this way:
 ```
 
 Response:
-I’ve put together this solution for you. It uses subtraction with distinct() and nrow() to isolate the duplicates, then validates the answer using a verification table.
+I've put together this solution for you. It uses subtraction with distinct() and nrow() to isolate the duplicates, then validates the answer using a verification table.
 
 ```r
 hidden_points_distinct <- nrow(penguins_bill) -
@@ -164,3 +164,5 @@ tibble(
 - The Proof: The prompt asks you to find the number instead of using count(). To prove this distinct() method works flawlessly, I built a tibble that compares your new result directly against your previous count() method (overlap_summary$hidden_points).
 
 - The Output: When matches returns TRUE, it guarantees that the distinct-subtraction logic yields the exact same mathematically sound result as counting the overlaps.
+
+
