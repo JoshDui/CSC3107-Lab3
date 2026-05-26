@@ -264,7 +264,7 @@ The beeswarm plot keeps each point closer to its actual value while still reduci
 
 #### g. Pros and Cons - Jitter versus Beeswarm
 
-The jitter plot is useful because it is simple and easy to explain. Since we set the horizontal jitter to zero, the bill-length values on the x-axis stay correct, while the vertical jitter spreads out points that would otherwise sit directly on top of one another. This makes it easier to notice that Adelie penguins are concentrated at shorter bill lengths, while Chinstrap and Gentoo penguins are concentrated at longer bill lengths. Jitter is also built into `ggplot2`, so it does not require the reader or the team to understand an extra plotting package.
+The jitter plot is useful because it is simple and easy to explain. Since we set the horizontal jitter to zero, the bill-length values on the x-axis stay correct, while the vertical jitter spreads out points that would otherwise sit directly on top of one another. This makes it easier to notice that Adelie penguins are concentrated at shorter bill lengths, while Chinstrap and Gentoo penguins are concentrated at longer bill lengths.
 
 The main disadvantage of jitter is that the vertical movement is artificial. The exact y-position of a point is not a real measurement; it is only a display adjustment. If the jitter height is too small, many points still overlap, but if it is too large, points from neighbouring species rows can start to look mixed together. Because the jitter positions are partly random, the plot can also look slightly different unless a seed is set.
 
